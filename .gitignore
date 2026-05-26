@@ -1,0 +1,21 @@
+# .NET artifacts
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.idea/
+
+# NuGet
+*.nupkg
+packages/
+
+# Build outputs
+publish/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / local config
+appsettings.Development.json

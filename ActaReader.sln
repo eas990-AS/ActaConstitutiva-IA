@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AC988F2D-2BCA-43E4-83FF-958019855158}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ActaReader.Web", "src\ActaReader.Web\ActaReader.Web.csproj", "{FAB62A0E-9410-4107-A5AF-987CC00D1DE6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6B7C6404-B493-4CE4-9870-31E770ECAA91}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ActaReader.Tests", "tests\ActaReader.Tests\ActaReader.Tests.csproj", "{9FB1252C-D3F7-417A-847B-4871D973B059}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FAB62A0E-9410-4107-A5AF-987CC00D1DE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FAB62A0E-9410-4107-A5AF-987CC00D1DE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FAB62A0E-9410-4107-A5AF-987CC00D1DE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FAB62A0E-9410-4107-A5AF-987CC00D1DE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FB1252C-D3F7-417A-847B-4871D973B059}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FB1252C-D3F7-417A-847B-4871D973B059}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FB1252C-D3F7-417A-847B-4871D973B059}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FB1252C-D3F7-417A-847B-4871D973B059}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FAB62A0E-9410-4107-A5AF-987CC00D1DE6} = {AC988F2D-2BCA-43E4-83FF-958019855158}
+		{9FB1252C-D3F7-417A-847B-4871D973B059} = {6B7C6404-B493-4CE4-9870-31E770ECAA91}
+	EndGlobalSection
+EndGlobal
