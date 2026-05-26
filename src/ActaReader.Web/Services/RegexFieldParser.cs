@@ -84,7 +84,7 @@ public class RegexFieldParser : IFieldParser
         @"\b(S\.A\.\s*de\s*C\.V\.|S\.A\.C\.V\.|S\.R\.L\.\s*de\s*C\.V\.|S\.A\.P\.I\.\s*de\s*C\.V\.)",
         RegexOptions.IgnoreCase);
 
-    public static readonly List<string> AllKeys = Patterns.Select(t => t.Key).ToList();
+    public static IReadOnlyList<string> AllKeys { get; } = Patterns.Select(t => t.Key).ToArray();
 
     public IReadOnlyList<ActaField> Parse(IReadOnlyList<PageText> pages)
     {

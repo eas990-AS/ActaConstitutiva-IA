@@ -38,7 +38,7 @@ public class ActaReaderService
         var allFields = regexFields
             .Where(f => f.Source != "not_found")
             .Concat(claudeFields)
-            .OrderBy(f => RegexFieldParser.AllKeys.IndexOf(f.Key))
+            .OrderBy(f => ((IList<string>)RegexFieldParser.AllKeys).IndexOf(f.Key))
             .ToList();
 
         return allFields;

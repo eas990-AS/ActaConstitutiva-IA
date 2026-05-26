@@ -69,7 +69,7 @@ public class ClaudeFieldParser : IClaudeFieldParser
         var body = new
         {
             model      = _model,
-            max_tokens = 1024,
+            max_tokens = 2048,
             messages   = new[] { new { role = "user", content = prompt } }
         };
 
@@ -84,6 +84,7 @@ public class ClaudeFieldParser : IClaudeFieldParser
             var json = await resp.Content.ReadAsStringAsync(ct);
             return ParseResponse(json, keys);
         }
+        catch (OperationCanceledException) { throw; }
         catch
         {
             return keys.Select(k => MakeNotFound(k)).ToList();
