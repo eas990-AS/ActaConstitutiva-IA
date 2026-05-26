@@ -76,7 +76,8 @@
     e.preventDefault();
     document.getElementById('uploadZone').classList.add('drag-over');
   }
-  function onDragLeave() {
+  function onDragLeave(e) {
+    if (e.relatedTarget && document.getElementById('uploadZone').contains(e.relatedTarget)) return;
     document.getElementById('uploadZone').classList.remove('drag-over');
   }
   function onDrop(e) {
@@ -90,6 +91,7 @@
       showError('El archivo debe ser un PDF.');
       return;
     }
+    if (blobUrl) URL.revokeObjectURL(blobUrl);
     blobUrl = URL.createObjectURL(file);
     setState('spinner');
 
@@ -98,15 +100,16 @@
     fd.append('__RequestVerificationToken', getToken());
 
     let fields;
+    const t = setTimeout(() =>
+      document.getElementById('spinnerMsg').textContent = 'Extrayendo campos con IA…', 3000);
     try {
-      const t = setTimeout(() =>
-        document.getElementById('spinnerMsg').textContent = 'Extrayendo campos con IA…', 3000);
       const res  = await fetch('/', { method: 'POST', body: fd });
       clearTimeout(t);
       const data = await res.json();
       if (!res.ok) { showError(data.error ?? 'Error desconocido.'); return; }
       fields = data;
     } catch {
+      clearTimeout(t);
       showError('No se pudo conectar con el servidor.');
       return;
     }
