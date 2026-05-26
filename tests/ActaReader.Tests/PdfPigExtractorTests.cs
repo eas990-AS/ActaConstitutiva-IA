@@ -51,4 +51,12 @@ public class PdfPigExtractorTests
         Assert.Equal(1, pages[0].PageNumber);
         Assert.Equal(2, pages[1].PageNumber);
     }
+
+    [Fact]
+    public void HasUsableText_WhenPdfHasNoText_ReturnsFalse()
+    {
+        var bytes = BuildTestPdf(""); // empty text = no usable content
+        var extractor = new PdfPigExtractor();
+        Assert.False(extractor.HasUsableText(bytes));
+    }
 }

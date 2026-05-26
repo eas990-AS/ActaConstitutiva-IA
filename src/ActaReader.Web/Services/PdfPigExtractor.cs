@@ -10,6 +10,7 @@ public class PdfPigExtractor : IPdfExtractor
 
     public bool HasUsableText(byte[] pdf)
     {
+        if (pdf is null || pdf.Length == 0) return false;
         using var doc = PdfDocument.Open(pdf);
         if (doc.NumberOfPages == 0) return false;
         var total = doc.GetPages().Sum(p => p.Text.Length);
@@ -18,6 +19,7 @@ public class PdfPigExtractor : IPdfExtractor
 
     public Task<IReadOnlyList<PageText>> ExtractAsync(byte[] pdf)
     {
+        if (pdf is null || pdf.Length == 0) return Task.FromResult<IReadOnlyList<PageText>>(Array.Empty<PageText>());
         using var doc = PdfDocument.Open(pdf);
         IReadOnlyList<PageText> pages = doc.GetPages()
             .Select(p => new PageText(p.Number, p.Text))
