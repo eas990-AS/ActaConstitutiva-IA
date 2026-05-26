@@ -1,25 +1,37 @@
-var builder = WebApplication.CreateBuilder(args);
+// src/ActaReader.Web/Program.cs
+using ActaReader.Web.Models;
+using ActaReader.Web.Services;
 
-// Add services to the container.
+var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 
-var app = builder.Build();
+var opts = builder.Configuration.GetSection("ActaReader").Get<ActaReaderOptions>()
+           ?? new ActaReaderOptions();
+builder.Services.AddSingleton(opts);
 
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+builder.Services.AddSingleton<IPdfExtractor, PdfPigExtractor>();
+builder.Services.AddSingleton<TesseractExtractor>(_ => new TesseractExtractor(opts.TessdataPath));
+builder.Services.AddSingleton<IFieldParser, RegexFieldParser>();
+
+builder.Services.AddHttpClient<IClaudeFieldParser, ClaudeFieldParser>(client =>
 {
-    app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
+    client.BaseAddress = new Uri("https://api.anthropic.com/");
+    client.DefaultRequestHeaders.Add("x-api-key", opts.ClaudeApiKey);
+    client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+});
 
-app.UseHttpsRedirection();
+builder.Services.AddScoped<ActaReaderService>(sp => new ActaReaderService(
+    sp.GetRequiredService<IPdfExtractor>(),
+    sp.GetRequiredService<TesseractExtractor>(),
+    sp.GetRequiredService<IFieldParser>(),
+    sp.GetRequiredService<IClaudeFieldParser>()));
+
+builder.WebHost.ConfigureKestrel(k =>
+    k.Limits.MaxRequestBodySize = opts.MaxFileSizeMb * 1024L * 1024L);
+
+var app = builder.Build();
+if (!app.Environment.IsDevelopment()) app.UseExceptionHandler("/Error");
 app.UseStaticFiles();
-
 app.UseRouting();
-
-app.UseAuthorization();
-
 app.MapRazorPages();
-
 app.Run();
