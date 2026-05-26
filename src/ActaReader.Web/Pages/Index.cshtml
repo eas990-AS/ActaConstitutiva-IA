@@ -1,10 +1,177 @@
-﻿@page
-@model IndexModel
-@{
-    ViewData["Title"] = "Home page";
-}
+@page
+@model ActaReader.Web.Pages.IndexModel
+@{ Layout = null; }
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Extractor de Acta Constitutiva</title>
+  <link rel="stylesheet" href="~/css/acta.css"/>
+</head>
+<body>
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<header class="app-header">
+  <h1>Extractor de Acta Constitutiva</h1>
+</header>
+
+<!-- Upload -->
+<div id="uploadWrap" class="upload-wrap">
+  <div id="uploadZone" class="upload-zone"
+       ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+    <p>Arrastra el PDF aquí</p>
+    <p style="color:#aaa;font-size:.85rem">o</p>
+    <input type="file" id="file-input" accept=".pdf,application/pdf"/>
+    <button class="btn-primary" onclick="document.getElementById('file-input').click()">
+      Seleccionar PDF
+    </button>
+  </div>
 </div>
+
+<!-- Spinner -->
+<div id="spinnerWrap" class="spinner-wrap">
+  <div class="spinner"></div>
+  <p id="spinnerMsg" class="spinner-msg">Analizando documento…</p>
+</div>
+
+<!-- Resultados -->
+<div id="resultsWrap" class="results-wrap">
+  <div class="split">
+    <div class="fields-panel">
+      <h2>Campos extraídos</h2>
+      <div id="warnBox" class="alert-warn" style="display:none">
+        Algunos campos no se encontraron en el texto del PDF.
+      </div>
+      <table class="tbl">
+        <thead><tr><th>Campo</th><th>Valor</th><th>Pág</th><th>Src</th></tr></thead>
+        <tbody id="fieldsBody"></tbody>
+      </table>
+      <a class="back-link" href="/">← Analizar otro PDF</a>
+    </div>
+    <div class="pdf-panel">
+      <iframe id="pdf-viewer" src="about:blank"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- Error -->
+<div id="errorWrap" class="error-wrap">
+  <div class="alert-err"><strong>Error:</strong> <span id="errorMsg"></span></div>
+  <button class="btn-primary" onclick="location.reload()" style="margin-top:.75rem">
+    Intentar de nuevo
+  </button>
+</div>
+
+@Html.AntiForgeryToken()
+
+<script>
+  let blobUrl = null;
+  let activeRow = null;
+
+  document.getElementById('file-input').addEventListener('change', e => {
+    if (e.target.files[0]) processFile(e.target.files[0]);
+  });
+
+  function onDragOver(e) {
+    e.preventDefault();
+    document.getElementById('uploadZone').classList.add('drag-over');
+  }
+  function onDragLeave() {
+    document.getElementById('uploadZone').classList.remove('drag-over');
+  }
+  function onDrop(e) {
+    e.preventDefault();
+    document.getElementById('uploadZone').classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+  }
+
+  async function processFile(file) {
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      showError('El archivo debe ser un PDF.');
+      return;
+    }
+    blobUrl = URL.createObjectURL(file);
+    setState('spinner');
+
+    const fd = new FormData();
+    fd.append('pdf', file);
+    fd.append('__RequestVerificationToken', getToken());
+
+    let fields;
+    try {
+      const t = setTimeout(() =>
+        document.getElementById('spinnerMsg').textContent = 'Extrayendo campos con IA…', 3000);
+      const res  = await fetch('/', { method: 'POST', body: fd });
+      clearTimeout(t);
+      const data = await res.json();
+      if (!res.ok) { showError(data.error ?? 'Error desconocido.'); return; }
+      fields = data;
+    } catch {
+      showError('No se pudo conectar con el servidor.');
+      return;
+    }
+
+    renderResults(fields);
+  }
+
+  function getToken() {
+    const el = document.querySelector('input[name="__RequestVerificationToken"]');
+    return el ? el.value : '';
+  }
+
+  function renderResults(fields) {
+    const tbody = document.getElementById('fieldsBody');
+    tbody.innerHTML = '';
+    let hasNF = false;
+
+    fields.forEach(f => {
+      const tr = document.createElement('tr');
+      if (f.source === 'not_found') { tr.classList.add('nf'); hasNF = true; }
+
+      const badgeCls  = f.source === 'regex' ? 'r' : f.source === 'claude' ? 'ia' : 'no';
+      const badgeTxt  = f.source === 'regex' ? 'R' : f.source === 'claude' ? 'IA' : '—';
+      const pageLabel = f.pageNumber > 0 ? f.pageNumber : '—';
+      const valLabel  = f.value || 'No encontrado';
+
+      tr.innerHTML =
+        `<td><strong>${esc(f.fieldName)}</strong></td>` +
+        `<td>${esc(valLabel)}</td>` +
+        `<td>${pageLabel}</td>` +
+        `<td><span class="badge ${badgeCls}">${badgeTxt}</span></td>`;
+
+      tr.addEventListener('click', () => jump(f.pageNumber, tr));
+      tbody.appendChild(tr);
+    });
+
+    if (hasNF) document.getElementById('warnBox').style.display = '';
+    document.getElementById('pdf-viewer').src = blobUrl + '#page=1';
+    setState('results');
+  }
+
+  function jump(page, row) {
+    if (page > 0) document.getElementById('pdf-viewer').src = blobUrl + '#page=' + page;
+    if (activeRow) activeRow.classList.remove('active');
+    row.classList.add('active');
+    activeRow = row;
+  }
+
+  function setState(s) {
+    document.getElementById('uploadWrap').style.display  = s === 'upload'  ? '' : 'none';
+    document.getElementById('spinnerWrap').style.display = s === 'spinner' ? '' : 'none';
+    document.getElementById('resultsWrap').style.display = s === 'results' ? '' : 'none';
+    document.getElementById('errorWrap').style.display   = s === 'error'   ? '' : 'none';
+  }
+
+  function showError(msg) {
+    document.getElementById('errorMsg').textContent = msg;
+    setState('error');
+  }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
