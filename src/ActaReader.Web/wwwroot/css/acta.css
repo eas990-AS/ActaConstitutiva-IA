@@ -55,6 +55,15 @@ body { font-family: system-ui, sans-serif; margin: 0; background: #f0f2f5; }
 .tbl tr.active td { background: #cde0f5; }
 .tbl tr.nf td { color: #b03030; }
 
+.page-btn {
+  background: #1a3c5e; color: #fff;
+  border: none; border-radius: 4px;
+  padding: 2px 8px; font-size: 0.78rem;
+  cursor: pointer; font-weight: 600;
+  transition: background .15s;
+}
+.page-btn:hover { background: #254f78; }
+
 .badge {
   display: inline-block; padding: 1px 6px; border-radius: 3px;
   font-size: 0.72rem; font-weight: 700; white-space: nowrap;

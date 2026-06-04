@@ -65,7 +65,8 @@
 @Html.AntiForgeryToken()
 
 <script>
-  let blobUrl = null;
+  let pdfFile  = null;   // original File object — needed to create fresh blob URLs
+  let blobUrl  = null;
   let activeRow = null;
 
   document.getElementById('file-input').addEventListener('change', e => {
@@ -91,6 +92,7 @@
       showError('El archivo debe ser un PDF.');
       return;
     }
+    pdfFile = file;
     if (blobUrl) URL.revokeObjectURL(blobUrl);
     blobUrl = URL.createObjectURL(file);
     setState('spinner');
@@ -133,15 +135,21 @@
 
       const badgeCls  = f.source === 'regex' ? 'r' : f.source === 'claude' ? 'ia' : 'no';
       const badgeTxt  = f.source === 'regex' ? 'R' : f.source === 'claude' ? 'IA' : '—';
-      const pageLabel = f.pageNumber > 0 ? f.pageNumber : '—';
+      const pageCell  = f.pageNumber > 0
+        ? `<button class="page-btn" title="Ir a página ${f.pageNumber}">${f.pageNumber}</button>`
+        : '—';
       const valLabel  = f.value || 'No encontrado';
 
       tr.innerHTML =
         `<td><strong>${esc(f.fieldName)}</strong></td>` +
         `<td>${esc(valLabel)}</td>` +
-        `<td>${pageLabel}</td>` +
+        `<td>${pageCell}</td>` +
         `<td><span class="badge ${badgeCls}">${badgeTxt}</span></td>`;
 
+      tr.querySelector('.page-btn')?.addEventListener('click', e => {
+        e.stopPropagation();
+        jump(f.pageNumber, tr);
+      });
       tr.addEventListener('click', () => jump(f.pageNumber, tr));
       tbody.appendChild(tr);
     });
@@ -152,17 +160,23 @@
   }
 
   function jump(page, row) {
-    if (page > 0) document.getElementById('pdf-viewer').src = blobUrl + '#page=' + page;
+    if (page > 0 && pdfFile) {
+      // The browser's built-in PDF viewer ignores fragment changes on the same blob URL.
+      // Creating a fresh blob URL each time forces a real reload at the target page.
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      blobUrl = URL.createObjectURL(pdfFile);
+      document.getElementById('pdf-viewer').src = blobUrl + '#page=' + page;
+    }
     if (activeRow) activeRow.classList.remove('active');
     row.classList.add('active');
     activeRow = row;
   }
 
   function setState(s) {
-    document.getElementById('uploadWrap').style.display  = s === 'upload'  ? '' : 'none';
-    document.getElementById('spinnerWrap').style.display = s === 'spinner' ? '' : 'none';
-    document.getElementById('resultsWrap').style.display = s === 'results' ? '' : 'none';
-    document.getElementById('errorWrap').style.display   = s === 'error'   ? '' : 'none';
+    document.getElementById('uploadWrap').style.display  = s === 'upload'  ? ''      : 'none';
+    document.getElementById('spinnerWrap').style.display = s === 'spinner' ? 'block' : 'none';
+    document.getElementById('resultsWrap').style.display = s === 'results' ? 'flex'  : 'none';
+    document.getElementById('errorWrap').style.display   = s === 'error'   ? 'block' : 'none';
   }
 
   function showError(msg) {

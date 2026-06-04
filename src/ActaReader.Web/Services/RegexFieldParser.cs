@@ -10,7 +10,12 @@ public class RegexFieldParser : IFieldParser
     [
         ("NombreSociedad", "Nombre de la sociedad",
             new Regex(
-                @"DENOMINACI[OÓ]N\s+SOCIAL\s*:?\s*(?:La\s+sociedad\s+se\s+denominar[aá]\s+)?[«""]?\s*([A-Z][A-ZÁÉÍÓÚÜÑ\s,\.]+?)(?=[,""»]|,?\s+S\.A\.|,?\s+S\.R\.L\.|SOCIEDAD\s+AN)",
+                // Alt 1: nombre entre comillas después del encabezado
+                @"DENOMINACI[OÓ]N(?:\s+SOCIAL)?\s*[-:.—][-.]?\s*[^\n«“""]{0,120}?[«“""]([^""”»\n«]{3,100})[""»”]" +
+                // Alt 2: nombre después de "denominará / denominación … es/será"
+                @"|DENOMINACI[OÓ]N(?:\s+SOCIAL)?\s*[-:.—][-.]?\s*[^\n]{0,120}?(?:denominar[aá]|(?<![A-Za-z])es(?![A-Za-z]))\s+([A-ZÁÉÍÓÚÜÑA-Za-záéíóúüñ0-9][^,\n""”»]{2,80}?)(?=[,\n])" +
+                // Alt 3: nombre directamente tras el separador (sin frase introductoria)
+                @"|DENOMINACI[OÓ]N(?:\s+SOCIAL)?\s*[-:.—][-.]?\s*([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑ\s0-9\-&]{2,80}?)(?=,\s*(?:S\.A\.|S\.R\.L\.|Sociedad|SOCIEDAD)\b)",
                 RegexOptions.IgnoreCase | RegexOptions.Multiline)),
 
         ("TipoSociedad", "Tipo de sociedad",
@@ -84,6 +89,38 @@ public class RegexFieldParser : IFieldParser
         @"\b(S\.A\.\s*de\s*C\.V\.|S\.A\.C\.V\.|S\.R\.L\.\s*de\s*C\.V\.|S\.A\.P\.I\.\s*de\s*C\.V\.)",
         RegexOptions.IgnoreCase);
 
+    // Minimum acceptable length for each field's extracted value.
+    private static readonly Dictionary<string, int> MinLength = new()
+    {
+        ["NombreSociedad"]    = 4,
+        ["TipoSociedad"]      = 4,
+        ["FechaConstitucion"] = 8,
+        ["LugarConstitucion"] = 4,
+        ["NombreNotario"]     = 8,
+        ["NumeroEscritura"]   = 1,
+        ["NumeroNotaria"]     = 1,
+        ["SociosFundadores"]  = 8,
+        ["ObjetoSocial"]      = 20,
+        ["CapitalFijo"]       = 3,
+        ["CapitalVariable"]   = 3,
+        ["Duracion"]          = 3,
+        ["DomicilioFiscal"]   = 8,
+        ["RepresentanteLegal"]= 6,
+    };
+
+    // First word(s) that indicate a garbage OCR capture
+    private static readonly HashSet<string> GarbageLeadWords =
+        new(StringComparer.OrdinalIgnoreCase) { "o", "y", "de", "la", "el", "los", "las", "un", "una", "su" };
+
+    private static bool IsGarbage(string key, string value)
+    {
+        if (value.Length < (MinLength.TryGetValue(key, out var min) ? min : 1)) return true;
+        if (value[0] is ',' or '.' or ')' or '(' or ':' or ';') return true;
+        var first = value.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+        if (GarbageLeadWords.Contains(first)) return true;
+        return false;
+    }
+
     public static IReadOnlyList<string> AllKeys { get; } = Patterns.Select(t => t.Key).ToArray();
 
     public IReadOnlyList<ActaField> Parse(IReadOnlyList<PageText> pages)
@@ -117,7 +154,7 @@ public class RegexFieldParser : IFieldParser
                         .Select(i => match.Groups[i].Value.Trim()))
                     : match.Groups[1].Value.Trim()).Trim();
 
-                if (string.IsNullOrWhiteSpace(value)) continue;
+                if (string.IsNullOrWhiteSpace(value) || IsGarbage(key, value)) continue;
 
                 found = new ActaField(fieldName, key, value, page.PageNumber, "regex");
                 break;

@@ -50,7 +50,7 @@ public class ActaReaderServiceTests
 
         var claude = new Mock<IClaudeFieldParser>();
 
-        var svc    = new ActaReaderService(pdfPig.Object, new Mock<IPdfExtractor>().Object, regex.Object, claude.Object);
+        var svc    = new ActaReaderService(pdfPig.Object, new Mock<IPdfExtractor>().Object, regex.Object, claude.Object, Microsoft.Extensions.Logging.Abstractions.NullLogger<ActaReader.Web.Services.ActaReaderService>.Instance);
         var result = await svc.ExtractAsync(pdf);
 
         Assert.Equal(14, result.Count);
@@ -78,7 +78,7 @@ public class ActaReaderServiceTests
         claude.Setup(c => c.ParseAsync(pages, It.IsAny<IEnumerable<string>>(), default))
               .ReturnsAsync(claudeResult);
 
-        var svc    = new ActaReaderService(pdfPig.Object, new Mock<IPdfExtractor>().Object, regex.Object, claude.Object);
+        var svc    = new ActaReaderService(pdfPig.Object, new Mock<IPdfExtractor>().Object, regex.Object, claude.Object, Microsoft.Extensions.Logging.Abstractions.NullLogger<ActaReader.Web.Services.ActaReaderService>.Instance);
         var result = await svc.ExtractAsync(pdf);
 
         claude.Verify(c => c.ParseAsync(It.IsAny<IReadOnlyList<PageText>>(),
@@ -104,7 +104,7 @@ public class ActaReaderServiceTests
 
         var claude = new Mock<IClaudeFieldParser>();
 
-        var svc = new ActaReaderService(pdfPig.Object, tesseract.Object, regex.Object, claude.Object);
+        var svc = new ActaReaderService(pdfPig.Object, tesseract.Object, regex.Object, claude.Object, Microsoft.Extensions.Logging.Abstractions.NullLogger<ActaReader.Web.Services.ActaReaderService>.Instance);
         await svc.ExtractAsync(pdf);
 
         tesseract.Verify(e => e.ExtractAsync(pdf), Times.Once);

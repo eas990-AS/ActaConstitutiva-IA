@@ -6,15 +6,17 @@ namespace ActaReader.Web.Services;
 
 public class PdfPigExtractor : IPdfExtractor
 {
-    private const int MinCharsPerPage = 20;
+    private const int MinCharsPerPage   = 20;
+    private const double MinTextPageRatio = 0.25; // al menos 25 % de páginas deben tener texto
 
     public bool HasUsableText(byte[] pdf)
     {
         if (pdf is null || pdf.Length == 0) return false;
         using var doc = PdfDocument.Open(pdf);
         if (doc.NumberOfPages == 0) return false;
-        var total = doc.GetPages().Sum(p => p.Text.Length);
-        return (total / doc.NumberOfPages) >= MinCharsPerPage;
+        var pages      = doc.GetPages().ToList();
+        var pagesWithText = pages.Count(p => p.Text.Length >= MinCharsPerPage);
+        return pagesWithText >= 1 && (double)pagesWithText / pages.Count >= MinTextPageRatio;
     }
 
     public Task<IReadOnlyList<PageText>> ExtractAsync(byte[] pdf)
