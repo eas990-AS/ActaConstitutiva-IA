@@ -1,0 +1,14 @@
+# Base de datos para desarrollo local: docker compose up -d
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: reparto
+      POSTGRES_PASSWORD: reparto
+      POSTGRES_DB: reparto
+    ports:
+      - "5432:5432"
+    volumes:
+      - reparto-db:/var/lib/postgresql/data
+volumes:
+  reparto-db:

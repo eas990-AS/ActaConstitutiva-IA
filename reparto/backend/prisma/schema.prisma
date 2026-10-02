@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SUPERVISOR
+  COURIER
+}
+
+enum PackageStatus {
+  REGISTERED
+  ASSIGNED
+  IN_ROUTE
+  DELIVERED
+  FAILED
+  RETURNED
+}
+
+enum AttemptResult {
+  DELIVERED
+  FAILED
+}
+
+enum FailReason {
+  NO_ONE_HOME
+  WRONG_ADDRESS
+  REJECTED
+  UNSAFE_AREA
+  OTHER
+}
+
+enum EvidenceKind {
+  PACKAGE_PHOTO
+  FACADE_PHOTO
+  SIGNATURE
+}
+
+enum AlertType {
+  OUT_OF_ZONE
+  LOW_BATTERY
+  NO_SIGNAL
+  PANIC
+}
+
+model Zone {
+  id        String    @id @default(uuid())
+  name      String
+  color     String    @default("#2563eb")
+  /// Vértices del polígono como [{lat, lng}, ...]
+  polygon   Json
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  users     User[]
+  packages  Package[]
+}
+
+model User {
+  id           String            @id @default(uuid())
+  name         String
+  username     String            @unique
+  passwordHash String
+  role         Role
+  phone        String?
+  zoneId       String?
+  zone         Zone?             @relation(fields: [zoneId], references: [id])
+  active       Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  packages     Package[]
+  routes       Route[]
+  attempts     DeliveryAttempt[]
+  alerts       Alert[]
+}
+
+model Package {
+  id             String            @id @default(uuid())
+  trackingCode   String            @unique
+  recipientName  String
+  recipientPhone String?
+  address        String
+  lat            Float?
+  lng            Float?
+  notes          String?
+  /// Día de operación 'YYYY-MM-DD'
+  scheduledDate  String
+  status         PackageStatus     @default(REGISTERED)
+  attempts       Int               @default(0)
+  zoneId         String?
+  zone           Zone?             @relation(fields: [zoneId], references: [id])
+  courierId      String?
+  courier        User?             @relation(fields: [courierId], references: [id])
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  history        DeliveryAttempt[]
+
+  @@index([scheduledDate, courierId])
+  @@index([scheduledDate, zoneId])
+}
+
+model Route {
+  id         String            @id @default(uuid())
+  courierId  String
+  courier    User              @relation(fields: [courierId], references: [id])
+  date       String
+  startedAt  DateTime
+  startLat   Float?
+  startLng   Float?
+  endedAt    DateTime?
+  endLat     Float?
+  endLng     Float?
+  distanceKm Float             @default(0)
+  points     LocationPoint[]
+  attempts   DeliveryAttempt[]
+
+  @@index([courierId, date])
+}
+
+model LocationPoint {
+  id         BigInt   @id @default(autoincrement())
+  routeId    String
+  route      Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  lat        Float
+  lng        Float
+  accuracy   Float?
+  speed      Float?
+  battery    Float?
+  recordedAt DateTime
+
+  @@index([routeId, recordedAt])
+}
+
+model DeliveryAttempt {
+  id                    String        @id @default(uuid())
+  clientId              String        @unique
+  packageId             String
+  package               Package       @relation(fields: [packageId], references: [id])
+  routeId               String?
+  route                 Route?        @relation(fields: [routeId], references: [id])
+  courierId             String
+  courier               User          @relation(fields: [courierId], references: [id])
+  result                AttemptResult
+  failReason            FailReason?
+  recipientName         String?
+  comment               String?
+  distanceJustification String?
+  lat                   Float?
+  lng                   Float?
+  distanceMeters        Float?
+  occurredAt            DateTime
+  createdAt             DateTime      @default(now())
+  evidences             Evidence[]
+
+  @@index([packageId])
+}
+
+model Evidence {
+  id        String          @id @default(uuid())
+  attemptId String
+  attempt   DeliveryAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  kind      EvidenceKind
+  /// Clave del archivo en el almacenamiento
+  storageKey String
+  mimeType  String
+  sha256    String
+  createdAt DateTime        @default(now())
+}
+
+model Alert {
+  id             String    @id @default(uuid())
+  type           AlertType
+  courierId      String
+  courier        User      @relation(fields: [courierId], references: [id])
+  message        String
+  lat            Float?
+  lng            Float?
+  createdAt      DateTime  @default(now())
+  acknowledgedAt DateTime?
+
+  @@index([createdAt])
+}

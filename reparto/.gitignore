@@ -1,0 +1,2 @@
+# El .gitignore raíz ignora "packages/" (NuGet); aquí es código del backend.
+!/backend/src/packages/
