@@ -1,0 +1,46 @@
+# Dependencias
+node_modules/
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+web-build/
+expo-env.d.ts
+
+# Carpetas nativas generadas (CNG: se crean con `npx expo prebuild` / `expo run:*`)
+/ios
+/android
+
+# Nativo / firmas
+.kotlin/
+*.orig.*
+*.jks
+*.keystore
+!debug.keystore
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.apk
+*.aab
+*.ipa
+
+# Metro
+.metro-health-check*
+
+# Depuración
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Sistema
+.DS_Store
+*.pem
+
+# Variables de entorno locales
+.env
+.env*.local
+
+# TypeScript
+*.tsbuildinfo
