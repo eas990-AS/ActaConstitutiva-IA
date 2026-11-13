@@ -1,0 +1,19 @@
+{
+  "name": "caldex-plan-fuentes",
+  "private": true,
+  "description": "Generadores del plan ejecutivo del sitio web Caldex (Word, PowerPoint y diagramas)",
+  "scripts": {
+    "diagramas": "node diagramas.js",
+    "word": "node documento_word.js",
+    "presentacion": "node presentacion.js",
+    "todo": "node diagramas.js && node documento_word.js && node presentacion.js"
+  },
+  "dependencies": {
+    "docx": "^9.0.0",
+    "pptxgenjs": "^3.12.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.0.0",
+    "sharp": "^0.33.0"
+  }
+}
